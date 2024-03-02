@@ -10,10 +10,10 @@ Add_library(libdd4hep2FBX ${Lib})
 
 
 set(exename dd4hep2FBX)
-include_directories(${PROJECT_SOURCE_DIR}/dd4hep2FBX)
+# include_directories(${PROJECT_SOURCE_DIR}/dd4hep2FBX)
 add_executable(${exename} test.cc)
 target_link_libraries(${exename} DD4hep::DDCore DD4hep::DDCond 
-        DD4hep::DDAlign ROOT::Core ROOT::Geom ROOT::GenVector 
+        DD4hep::DDAlign ROOT::Core ROOT::Geom ROOT::GenVector CLHEP::CLHEPS CLHEP::CLHEP
         libdd4hep2FBX)
 
 # install(TARGETS ${exename}

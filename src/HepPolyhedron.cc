@@ -66,6 +66,16 @@
 #include "HepPolyhedron.h"
 // #include "G4PhysicalConstants.hh"
 #include <CLHEP/Geometry/Vector3D.h> //#include "HepGeom::Vector3D<double>.hh"
+#include <CLHEP/Geometry/Transform3D.h>  
+
+
+
+#include "CLHEP/Geometry/BasicVector3D.h"
+#include "CLHEP/Geometry/defs.h"
+#include "CLHEP/Geometry/Normal3D.h"
+#include "CLHEP/Geometry/Plane3D.h"
+#include "CLHEP/Geometry/Point3D.h"
+#include "CLHEP/Geometry/Vector3D.h"
 
 #include <cstdlib>  // Required on some compilers for std::abs(int) ...
 #include <cmath>
@@ -91,7 +101,7 @@ using CLHEP::deg;
 using CLHEP::pi;
 using CLHEP::twopi;
 using CLHEP::nm;
-const double spatialTolerance = 0.01*nm;
+const double spatialTolerance = 1*nm;
 
 /***********************************************************************
  *                                                                     *
@@ -1223,8 +1233,15 @@ void HepPolyhedron::InvertFacets()
     }
   }
 }
-
-HepPolyhedron & HepPolyhedron::Transform(const ROOT::Math::Transform3D &t)
+class mmTransform3d : public HepGeom::Transform3D{
+  public:
+  mmTransform3d(){}
+  void mmsetTransform(double XX, double XY, double XZ, double DX, double YX, double YY, double YZ, double DY, double ZX, double ZY, double ZZ, double DZ){
+    setTransform (XX,  XY,  XZ,  DX,  YX,  YY,  YZ,  DY,  ZX,  ZY,  ZZ,  DZ);
+  }
+  
+};
+HepPolyhedron & HepPolyhedron::Transform(const ROOT::Math::Transform3D &tmp)
 /***********************************************************************
  *                                                                     *
  * Name: HepPolyhedron::Transform                    Date:    01.12.99  *
@@ -1234,6 +1251,42 @@ HepPolyhedron & HepPolyhedron::Transform(const ROOT::Math::Transform3D &t)
  *                                                                     *
  ***********************************************************************/
 {
+  double xx,  xy,  xz,  dx,  yx,  yy,  yz,  dy,  zx,  zy,  zz,  dz;
+  tmp.GetComponents( xx,  xy,  xz,  dx,  yx,  yy,  yz,  dy,  zx,  zy,  zz,  dz) ;
+  mmTransform3d t;
+  t.mmsetTransform(xx,  xy,  xz,  dx,  yx,  yy,  yz,  dy,  zx,  zy,  zz,  dz);
+
+  if (nvert > 0) {
+    for (int i=1; i<=nvert; i++) { pV[i] = t * pV[i]; }
+ 
+    //  C H E C K   D E T E R M I N A N T   A N D
+    //  I N V E R T   F A C E T S   I F   I T   I S   N E G A T I V E
+ 
+    HepGeom::Vector3D<double> d = t * HepGeom::Vector3D<double>(0,0,0);
+    HepGeom::Vector3D<double> x = t * HepGeom::Vector3D<double>(1,0,0) - d;
+    HepGeom::Vector3D<double> y = t * HepGeom::Vector3D<double>(0,1,0) - d;
+    HepGeom::Vector3D<double> z = t * HepGeom::Vector3D<double>(0,0,1) - d;
+    if ((x.cross(y))*z < 0) {
+      InvertFacets();
+      std::cout<<__LINE__ << "InvertFacets" << std::endl;
+    }
+
+  }
+  return *this;
+}/*
+{
+  HepGeom::Vector3D<double>  base(1,2,3);
+  HepGeom::Transform3D m;
+ HepGeom::RotateX3D rz = HepGeom::RotateX3D(1.2);
+ HepGeom::RotateX3D rx1 = HepGeom::RotateX3D(1.3);
+ HepGeom::RotateX3D rz2 = HepGeom::RotateX3D(1.5);
+//  HepGeom::Vector3D<double>  out=rz2*(rx1*(rz*base));
+std::cout << "||||||" << std::endl;
+
+HepGeom::Vector3D<double> out = rx1*base;
+
+std::cout << out.x() << " " << out.y() << " " << out.z() << std::endl;
+
   if (nvert > 0) {
     ROOT::Math::XYZVector pv_copy;
     ROOT::Math::XYZVector tmp;
@@ -1257,7 +1310,7 @@ HepPolyhedron & HepPolyhedron::Transform(const ROOT::Math::Transform3D &t)
     if ((x.Cross(y)).Dot(z) < 0) InvertFacets();
   }
   return *this;
-}
+}*/
 
 bool HepPolyhedron::GetNextVertexIndex(int &index, int &edgeFlag) const
 /***********************************************************************
