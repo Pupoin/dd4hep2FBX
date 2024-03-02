@@ -197,7 +197,7 @@
 // typedef HepGeom::Transform3D 	G4Transform3D
 
 #ifndef DEFAULT_NUMBER_OF_STEPS
-#define DEFAULT_NUMBER_OF_STEPS 4
+#define DEFAULT_NUMBER_OF_STEPS 24
 #endif
 
 class G4Facet {

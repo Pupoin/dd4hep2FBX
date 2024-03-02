@@ -12,21 +12,20 @@
 
 #include <iomanip>
 
+
 int main()
 {
   // Detector &lcdd = Detector::getInstance();
-  string filePath = "/home/wln/STCFGeo/compact/STCF.xml";
-
-  // string filePath="/home/wln/DD4hep_source/DDDetectors/compact/SiD.xml";
+  string filePath="/home/wln/DD4hep_source/DDDetectors/compact/SiD.xml";
   // string filePath="/home/wln/DD4hep/DDJunoDetectors/compact/Juno.xml";
   // Tube waterPool(0, 10 * mm, 10 * mm, 20 * mm, 30 * mm);
   // lcdd.fromCompact("/home/wln/DD4hep_source/DDDetectors/compact/SiD.xml");
   // const HandleMap det_map = lcdd.detectors();
 
   // dd4hep2FBXWriter test(det_map, true);
-
   dd4hep2FBXWriter test(filePath, true);
   test.doit("test.fbx");
+
 
   std::cout << "----------------- test ----------------------" << std::endl;
   ////** do no comment me!!!!!!!!!!!!!!!!!!!!!!!!!1
@@ -43,8 +42,7 @@ int main()
   HepGeom::Vector3D<double> out2 = rx1 * base2;
 
   std::cout << out.x() << " " << out.y() << " " << out.z() << std::endl;
-  ////** do no comment me!!!!!!!!!!!!!!!!!!!!!!!!!1
 
 
-  return 0;
+  return 0 ;
 }

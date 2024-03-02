@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
-project("JunoDetector")
+project("dd4hep2FBX")
 
 include_directories("/home/wln/DD4hep/include/" "include/")
 # set(LIB_SRC dd4hep2FBXWriter.cc)

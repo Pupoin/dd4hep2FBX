@@ -142,6 +142,7 @@ void getVolSolid(TGeoNode *node);
 
   //! Modified (legal-character and unique) solid name
   std::vector<std::string> m_solidName;
+  std::vector<std::string> m_materialName;
 
   std::vector<std::string> m_placedVolName;
   //! Modified (legal-character and unique) physical-volume 
@@ -157,7 +158,12 @@ void getVolSolid(TGeoNode *node);
   //! Flag to indicate that the logical volume is visible
   std::vector<bool> m_visible;
   std::vector<bool> m_assembly;
+    std::vector<bool> m_composite;
+  std::vector<bool>  m_replicated ;//.push_back(bb->IsReplicated () );
+  std::vector<bool> m_volumeMulti;//.push_back(IsVolumeMulti () ); 
+
   std::vector<TColor*> m_color;
+
 
 
   //! Modified (legal-character and unique) solid 

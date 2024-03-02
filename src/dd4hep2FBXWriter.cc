@@ -23,7 +23,6 @@
 #include "TGeoMatrix.h"
 #include <CLHEP/Vector/Rotation.h>
 #include <CLHEP/Geometry/Transform3D.h>
-#include <DD4hep/MatrixHelpers.h>
 #include "TROOT.h"
 // #include "Math/Vector3D.h"
 #include "Math/Transform3D.h"
@@ -104,6 +103,12 @@ void dd4hep2FBXWriter::getVolSolid(TGeoNode *node)
   m_color.push_back(colo);
   m_visible.push_back(aa->IsVisible());
   m_assembly.push_back(aa->IsAssembly());
+  m_materialName.push_back(aa->GetMaterial()->GetName());
+
+  m_replicated.push_back(aa->IsReplicated () );
+  m_volumeMulti.push_back(aa->IsVolumeMulti () ); 
+  m_composite.push_back(aa->GetShape()->IsComposite());
+
 
   bool isVisDaughter = node->GetVolume()->IsVisDaughters();
   for (int i = 0; i < nodeDaughters; i++)
@@ -124,6 +129,12 @@ void dd4hep2FBXWriter::getVolSolid(TGeoNode *node)
       m_solidName.push_back(daug->GetVolume()->GetShape()->GetName());
       m_color.push_back(color);
       m_assembly.push_back(bb->IsAssembly());
+      m_materialName.push_back(aa->GetMaterial()->GetName());
+
+  m_replicated.push_back(bb->IsReplicated () );
+  m_volumeMulti.push_back(bb->IsVolumeMulti () ); 
+  m_composite.push_back(bb->GetShape()->IsComposite());
+
 
       if(isVisDaughter){
         m_visible.push_back(bb->IsVisible());
@@ -174,7 +185,8 @@ bool dd4hep2FBXWriter::doit(std::string outputFilename)
   // Assign legal and unique names to each used physical volume, logical volume and solid
   getDets(m_world);
   getVolSolid(&*(m_world.placement()));
-  // std::cout << " m_placedVol size " << m_placedVol.size() << std::endl;
+  std::cout << " m_placedVol size " << m_placedVol.size() << std::endl;
+  double totalCmpt = 0, totalAssem = 0, totalMulti=0, totalreplicated=0;
   for (size_t i = 0; i < m_placedVol.size(); i++)
   {
     std::cout << "$$$  phvol:" << m_placedVolName[i] << " vol:" << m_volName[i]
@@ -182,8 +194,23 @@ bool dd4hep2FBXWriter::doit(std::string outputFilename)
               << " color:argb:" << m_color[i]->GetAlpha() << " " << m_color[i]->GetRed() << " " << m_color[i]->GetGreen() << " " << m_color[i]->GetBlue()
               << " visiable:" << m_visible[i]
               << std::endl;
+    if ((m_composite[i]))
+    {
+      totalCmpt++;
+    }
+    if ((m_assembly[i]))
+    {
+      totalAssem++;
+    }
+    if ((m_volumeMulti[i]))
+    {
+      totalMulti++;
+    }
+    if ((m_replicated[i]))
+    {
+      totalreplicated++;
+    }
   }
-
   // int kk = std::find(m_vol.begin(), m_vol.end(), m_vol[2])-m_vol.begin();
   // std::cout << __LINE__ << " kk:" << kk << std::endl;
   // for(auto node : m_placedVol){
@@ -193,20 +220,20 @@ bool dd4hep2FBXWriter::doit(std::string outputFilename)
 
   std::cout << "********* assignName **************" << std::endl;
   // Assign new name if duplicate
-  for (size_t i = 0; i < m_det.size(); i++)
-  {
-    DetElement subdet = m_det[i];
-    string detName = subdet.name();
-    m_detName = assignName(m_detName, detName, i);
-  }
-  for (size_t i = 0; i < m_vol.size(); i++)
-  {
-    string detVolName = m_volName[i];
-    string detSolidName = m_solidName[i];
+  // for (size_t i = 0; i < m_det.size(); i++)
+  // {
+  //   DetElement subdet = m_det[i];
+  //   string detName = subdet.name();
+  //   m_detName = assignName(m_detName, detName, i);
+  // }
+  // for (size_t i = 0; i < m_vol.size(); i++)
+  // {
+  //   string detVolName = m_volName[i];
+  //   string detSolidName = m_solidName[i];
 
-    m_volName = assignName(m_volName, detVolName, i);
-    m_solidName = assignName(m_solidName, detSolidName, i);
-  }
+  //   m_volName = assignName(m_volName, detVolName, i);
+  //   m_solidName = assignName(m_solidName, detSolidName, i);
+  // }
   // Count the number of references to each physical volume and logical volume and solid
   // so that these values can be placed in the FBX file's Definitions{} section.
   // countEntities(m_world);
@@ -245,37 +272,38 @@ bool dd4hep2FBXWriter::doit(std::string outputFilename)
   std::cout << " @@ writeGeometryNode " << std::endl;
   for (unsigned int solidIndex = 0; solidIndex < m_solid.size(); ++solidIndex)
   {
-    (*m_SolidID)[solidIndex] += 0x0000000001000000LL * solidIndex;
-
-      std::cout << __LINE__ << " inGeoNode,"  << " " << m_solid.size()
-                << " " << m_solidName[solidIndex] 
-                << " index:" << solidIndex 
-                << " " << (*m_SolidID)[solidIndex] 
-                << " classname:" << m_solid[solidIndex]->ClassName() 
-                << std::endl;
+    (*m_SolidID)[solidIndex] += 0x0000000001000000LL + solidIndex;
+    if (m_solidName[solidIndex].length() > 0)
+    {
+      // std::cout << __LINE__ << " " << m_solid.size() << " " << m_SolidID->size()
+      //           << m_solidName[solidIndex] << " "
+      //           << " index " << solidIndex << " "
+      //           << (*m_SolidID)[solidIndex] << std::endl;
       if(m_assembly[solidIndex]) continue;
       writeGeometryNode(m_solid[solidIndex], m_solidName[solidIndex], (*m_SolidID)[solidIndex]);
-
+    }
   }
 
   std::cout << " @@ writeMaterialNode " << std::endl;
   // write materials
-  for (unsigned int lvIndex = 0; lvIndex < m_vol.size(); ++lvIndex)
+  for (unsigned int solid_i = 0; solid_i < m_vol.size(); ++solid_i)
   {
-    (*m_MatID)[lvIndex] += 0x0000000001000000LL * lvIndex;
-    (*m_LVID)[lvIndex] += 0x0000000001000000LL * lvIndex;
-    // if (m_volName[lvIndex].length() > 0) {
-    // if (!(*m_LVUnique)[lvIndex])
-    // std::cout << __LINE__ << " materials_childVol_index: " << lvIndex << std::endl;
-      // if(m_assembly[lvIndex]) continue;
-      writeMaterialNode(lvIndex, m_volName[lvIndex]);
+    (*m_MatID)[solid_i] += 0x0000000001000000LL + solid_i;
+    (*m_LVID)[solid_i] += 0x0000000001000000LL + solid_i;
+    if (m_assembly[solid_i])
+      continue;
+    string name = m_vol[solid_i]->GetMaterial()->GetName();
+    double index = std::find(m_materialName.begin(), m_materialName.end(), name) - m_materialName.begin();
 
-    // }
+    if (index != solid_i)
+      writeMaterialNode(solid_i, m_volName[solid_i]);
+    else
+      (*m_MatID)[solid_i] += 0x0000000001000000LL + index;
   }
 
   for (unsigned int pvIndex = 0; pvIndex < NN; ++pvIndex)
   {
-    (*m_PVID)[pvIndex] += 0x0000000001000000LL * pvIndex;
+    (*m_PVID)[pvIndex] += 0x0000000001000000LL + pvIndex;
   }
 
   //
@@ -302,7 +330,7 @@ bool dd4hep2FBXWriter::doit(std::string outputFilename)
   for (unsigned int i = 0; i < m_placedVol.size(); i++)
   {
     if(i==0) continue; // 0 is the world
-    // if(m_assembly[i]) continue;
+    if(m_assembly[i]) continue;
 
     double pvIndex = i;
     unsigned long long pvID = (*m_PVID)[pvIndex];
@@ -313,22 +341,21 @@ bool dd4hep2FBXWriter::doit(std::string outputFilename)
     std::string mothername = m_volName[index];
     unsigned long long mPvID = (*m_PVID)[index];
 
-    // if(mother->IsAssembly()){
-    //   TGeoVolume *mmother = m_placedVol[index]->GetMotherVolume();
-    //   double mindex = std::find(m_vol.begin(), m_vol.end(), mmother) - m_vol.begin();
-    //   std::string mmothername = m_volName[mindex];
-    //   unsigned long long mmPvID = (*m_PVID)[mindex];
+    if(mother->IsAssembly()){
+      TGeoVolume *mmother = m_placedVol[index]->GetMotherVolume();
+      double mindex = std::find(m_vol.begin(), m_vol.end(), mmother) - m_vol.begin();
+      std::string mmothername = m_volName[mindex];
+      unsigned long long mmPvID = (*m_PVID)[mindex];
 
-    //   writePVToParentPV(pvName, mmothername, pvID, mmPvID);
-    // }
-    // else
+      writePVToParentPV(pvName, mmothername, pvID, mmPvID);
+    }
+    else
       writePVToParentPV(pvName, mothername, pvID, mPvID);
   }
     std::cout << __LINE__ << std::endl;
 
   for (unsigned int i = 0; i < m_solid.size(); i++)
   {
-    if(m_assembly[i]) continue;
     double lvIndex = i;
     unsigned long long lvID = (*m_LVID)[lvIndex];
     std::string lvName = m_volName[lvIndex];
@@ -336,6 +363,7 @@ bool dd4hep2FBXWriter::doit(std::string outputFilename)
     unsigned long long solidID = (*m_SolidID)[i];
     std::string solidName = m_solidName[i];
     unsigned long long matID = (*m_MatID)[i];
+    if(m_assembly[i]) continue;
 
 
     writeSolidToLV(lvName, solidName, m_visible[lvIndex], matID, lvID, solidID);
@@ -370,6 +398,13 @@ bool dd4hep2FBXWriter::doit(std::string outputFilename)
          << "}" << std::endl;
 
   m_File.close();
+
+
+  std::cout << __LINE__ <<  " " << "total composite:" << totalCmpt << " , total assembly:" << totalAssem 
+  << ", totalMulti:" << totalMulti << " ,m_replicated:" << totalreplicated
+  << " , total size:" << m_placedVol.size() 
+  << std::endl;
+
 
   return true;
 }
@@ -426,10 +461,10 @@ void dd4hep2FBXWriter::writePVModelNode(TGeoNode *node, const std::string pvName
 
   // FBX uses the Tait-Bryan version of the Euler angles (X then Y then Z rotation)
   double yaw = std::atan2(rot[1*3+0], rot[0*3+0]) * 180.0 / M_PI;
-  double pitch = -std::asin(rot[2*3+0]) * 180.0 / M_PI;
-  double roll = std::atan2(rot[2*3+1], rot[2*3+2]) * 180.0 / M_PI;
-  if (fabs(pitch) < 1.0E-12) pitch = 0.0;
   if (fabs(yaw) < 1.0E-12) yaw = 0.0;
+  double pitch = -std::asin(rot[2*3+0]) * 180.0 / M_PI;
+  if (fabs(pitch) < 1.0E-12) pitch = 0.0;
+  double roll = std::atan2(rot[2*3+1], rot[2*3+2]) * 180.0 / M_PI;
   if (fabs(roll) < 1.0E-12) roll = 0.0;
 
   m_File << "\t; PhysVol " << node->GetName();
@@ -504,42 +539,27 @@ GPolyhedron *getPolyhedron(Solid solid)
   string solidtype = solid.type();
   if (solidtype == "TGeoShapeAssembly") // ShapelessSolid
   {
-    // std::cout << "convert " << solidtype << " to polyhedron" << std::endl;
-    std::cout << "can not convert " << solidtype << " to polyhedron" << std::endl;
   }
   else if (solidtype == "TGeoScaledShape") // solid Scale
   {
-    // https://github.com/Geant4/geant4/blob/master/source/geometry/solids/Boolean/src/G4ScaledSolid.cc
-    std::cerr << "can not convert " << solidtype << " to polyhedron" << std::endl;
-    // Scale tmp(solid);
-    // double scale_x = tmp.scale_x(), scale_y = tmp.scale_y(), scale_z = tmp.scale_z();
-    // // TGeoShape
-    // G4Polyhedron* polyhedron = fPtrSolid->CreatePolyhedron();
-
-    // polyhedron->Transform(GetScaleTransform());
-    //  return polyhedron;
+    Scale tmp(solid);
+    double scale_x = tmp.scale_x();
     // return new GPolyhedronCons(tmp.rMin1(), tmp.rMax1(), tmp.rMin2(), tmp.rMax2(), tmp.dZ(), 0, twopi);
   }
   else if (solidtype == "TGeoBBox")
   {
-    std::cout << "convert " << solidtype << " to polyhedron" << std::endl;
     return new GPolyhedronBox(Box(solid).x(), Box(solid).y(), Box(solid).z());
   }
   else if (solidtype == "TGeoHalfSpace") // HalfSpace
   {
-    std::cout << "convert " << solidtype << " to polyhedron" << std::endl;
-    std::cout << "can not convert " << solidtype << " to polyhedron" << std::endl;
-
   }
   else if (solidtype == "TGeoCone") // cone
   {
-    std::cout << "convert " << solidtype << " to polyhedron" << std::endl;
     Cone tmp(solid);
     return new GPolyhedronCons(tmp.rMin1(), tmp.rMax1(), tmp.rMin2(), tmp.rMax2(), tmp.dZ(), 0, twopi);
   }
   else if (solidtype == "TGeoPcon") //  Polycone
   {
-    std::cout << "convert " << solidtype << " to polyhedron" << std::endl;
     // https://apc.u-paris.fr/~franco/g4doxy/html/G4Polycone_8cc-source.html#l00898
     Polycone tmp(solid);
     const int nz = tmp.zPlaneZ().size();
@@ -552,7 +572,6 @@ GPolyhedron *getPolyhedron(Solid solid)
       Rmin[i] = tmp.rMin(i);
       Rmax[i] = tmp.rMax(i);
     }
-    std::cout << __LINE__ << " my getpolyhedron: polycone(dd4hep), TGeoPcon" << std::endl;
     return new GPolyhedronPcon(tmp.startPhi(), // original_parameters->Start_angle,
                                tmp.deltaPhi(), // original_parameters->Opening_angle,
                                nz,             // original_parameters->Num_z_planes,
@@ -562,34 +581,28 @@ GPolyhedron *getPolyhedron(Solid solid)
   }
   else if (solidtype == "TGeoConeSeg") // ConeSegment
   {
-    std::cout << "convert " << solidtype << " to polyhedron" << std::endl;
     ConeSegment tmp(solid);
-    return new GPolyhedronCons(tmp.rMin1(), tmp.rMax1(), tmp.rMin2(), tmp.rMax2(), tmp.dZ(), tmp.startPhi(), tmp.endPhi()-tmp.startPhi());
+    return new GPolyhedronCons(tmp.rMin1(), tmp.rMax1(), tmp.rMin2(), tmp.rMax2(), tmp.dZ(), tmp.startPhi(), tmp.endPhi());
   }
   else if (solidtype == "TGeoTubeSeg") // Tube___________, // TwistedTube__________
   {
-    std::cout << "convert " << solidtype << " to polyhedron" << std::endl;
     Tube tmp(solid);
-    // TGeoTubeSeg *tmp2 = dynamic_cast<TGeoTubeSeg*>(&(*solid));
     // std::cout << __LINE__ << " in solidtype tgeotubeseg:" 
-    //   // <<" rmin:" <<  tmp.rMin()
-    //   // << " rmax:" << tmp.rMax()
-    //   // << " dz:" << tmp.dZ()
-    //   <<  " startphi:" << tmp2->GetPhi1()
-    //   << " endphi:" << tmp2->GetPhi2()
-    //   << " " << tmp2->GetPhi2() - tmp->GetPhi1()
+    //   <<" rmin:" <<  tmp.rMin()
+    //   << " rmax:" << tmp.rMax()
+    //   << " dz:" << tmp.dZ()
+    //   <<  " startphi:" << tmp.startPhi()
+    //   << " endphi:" << tmp.endPhi()
     //   << std::endl;
-    return new GPolyhedronTubs(tmp.rMin(), tmp.rMax(), tmp.dZ(), tmp.startPhi(), tmp.endPhi()-tmp.startPhi());
+    return new GPolyhedronTubs(tmp.rMin(), tmp.rMax(), tmp.dZ(), tmp.startPhi(), tmp.endPhi());
   }
   else if (solidtype == "TGeoCtub") // CutTube
   {
-    std::cout << "convert " << solidtype << " to polyhedron" << std::endl;
-
     // https://apc.u-paris.fr/~franco/g4doxy/html/G4CutTubs_8cc-source.html#l01975
     CutTube tmp(solid);
     typedef double double3[3];
     typedef int int4[4];
-    double fRMin = tmp.rMin(), fRMax = tmp.rMax(), fDz = tmp.dZ(), fSPhi = tmp.startPhi(), fDPhi = tmp.endPhi()-tmp.startPhi();
+    double fRMin = tmp.rMin(), fRMax = tmp.rMax(), fDz = tmp.dZ(), fSPhi = tmp.startPhi(), fDPhi = tmp.endPhi();
     double kCarTolerance = 0; // Cached geometrical tolerance ??
 
     GPolyhedron *ph = new GPolyhedron;
@@ -646,20 +659,15 @@ GPolyhedron *getPolyhedron(Solid solid)
   }
   else if (solidtype == "TGeoEltu") // EllipticalTube
   {
-    std::cout << "convert " << solidtype << " to polyhedron" << std::endl;
     EllipticalTube tmp(solid);
     GPolyhedronTube *eTube = new GPolyhedronTube(0., 1., tmp.dZ());
-    ROOT::Math::Transform3D trfm(tmp.a(), 0,      0, 0,
-                                 0,      tmp.b(), 0, 0, 
-                                 0,       0,      1, 0);
-    eTube->Transform(trfm);
-    return  eTube;
-
+    // apply non-uniform scaling...
+    // undefined reference to `HepGeom::operator*(HepGeom::Transform3D const&, HepGeom::Vector3D<double> const&)'
+    // eTube->Transform(HepGeom::Scale3D(tmp.a(), tmp.b(),1.));
+    // return  eTube;
   }
   else if (solidtype == "TGeoTrap") // Trap
   {
-    std::cout << "convert " << solidtype << " to polyhedron" << std::endl;
-
     Trap tmp(solid);
     return new GPolyhedronTrap(tmp.dZ(), tmp.theta(), tmp.phi(),
                                tmp.high1(), tmp.bottomLow1(), tmp.topLow1(), tmp.alpha1(),
@@ -667,37 +675,31 @@ GPolyhedron *getPolyhedron(Solid solid)
   }
   else if (solidtype == "TGeoTrd1") // Trd1
   {
-    std::cout << "convert " << solidtype << " to polyhedron" << std::endl;
     Trd1 tmp(solid);
     return new GPolyhedronTrd1(tmp.dX1(), tmp.dX2(), tmp.dY(), tmp.dZ());
   }
   else if (solidtype == "TGeoTrd2") // Trd2
   {
-    std::cout << "convert " << solidtype << " to polyhedron" << std::endl;
     Trd2 tmp(solid);
     return new GPolyhedronTrd2(tmp.dX1(), tmp.dX2(), tmp.dY1(), tmp.dY2(), tmp.dZ());
   }
   else if (solidtype == "TGeoTorus") // Torus
   {
-    std::cout << "convert " << solidtype << " to polyhedron" << std::endl;
     Torus tmp(solid);
     return new GPolyhedronTorus(tmp.rMin(), tmp.rMax(), tmp.r(), tmp.startPhi(), tmp.deltaPhi());
   }
   else if (solidtype == "TGeoSphere") // Sphere
   {
-    std::cout << "convert " << solidtype << " to polyhedron" << std::endl;
     Sphere tmp(solid);
-    return new GPolyhedronSphere(tmp.rMin(), tmp.rMax(), tmp.startPhi(), tmp.endPhi(), tmp.startTheta(), tmp.endTheta()-tmp.startTheta());
+    return new GPolyhedronSphere(tmp.rMin(), tmp.rMax(), tmp.startPhi(), tmp.endPhi(), tmp.startTheta(), tmp.endTheta());
   }
   else if (solidtype == "TGeoParaboloid") // Paraboloid
   {
-    std::cout << "convert " << solidtype << " to polyhedron" << std::endl;
     Paraboloid tmp(solid);
     return new GPolyhedronParaboloid(tmp.rLow(), tmp.rHigh(), tmp.dZ(), 0., twopi);
   }
   else if (solidtype == "TGeoHype") // Hyperboloid
   {
-    std::cout << "convert " << solidtype << " to polyhedron" << std::endl;
     Hyperboloid tmp(solid);
     return new GPolyhedronHype(tmp.rMin(), tmp.rMax(),
                                tmp.stereoInner(), tmp.stereoOuter(), tmp.dZ());
@@ -705,7 +707,6 @@ GPolyhedron *getPolyhedron(Solid solid)
   else if (solidtype == "TGeoPgon") // PolyhedraRegular______, Polyhedra_____
   {
     // PolyhedraRegular  t(Solid);
-    std::cout << "convert " << solidtype << " to polyhedron" << std::endl;
     TGeoPgon *tmp = dynamic_cast<TGeoPgon*>(&(*solid));
     std::cout << "__LINE__" << " in TGeoPgon:" << tmp->GetPhi1() << " " << tmp->GetDphi() << " " <<  tmp->GetNedges() << std::endl;
     return new GPolyhedronPgon(tmp->GetPhi1()*degree,
@@ -718,24 +719,16 @@ GPolyhedron *getPolyhedron(Solid solid)
   }
   else if (solidtype == "TGeoXtru") // ExtrudedPolygon
   {
-    std::cout << "can not convert " << solidtype << " to polyhedron" << std::endl;
-
   }
   else if (solidtype == "TGeoArb8") // EightPointSolid
   {
-    std::cout << "can not convert " << solidtype << " to polyhedron" << std::endl;
-
   }
   else if (solidtype == "TGeoTessellated") // TessellatedSolid
   {
-      std::cout << "can not convert " << solidtype << " to polyhedron" << std::endl;
-
     // https://apc.u-paris.fr/~franco/g4doxy/html/classG4TessellatedSolid.html#8f487866dbc90c2fddf520fcc7289359
   }
-  else{
-    std::cout << "can not convert solid to polyhedron" << std::endl;
-    return nullptr;
-  }
+
+  return nullptr;
 }
 
 void dd4hep2FBXWriter::writeGeometryNode(Solid solid, const std::string solidName, unsigned long long solidID)
@@ -746,8 +739,6 @@ void dd4hep2FBXWriter::writeGeometryNode(Solid solid, const std::string solidNam
   string solidtype = solid.type();
   if (solidtype == "TGeoCompositeShape")
   {
-    // std::cout << __LINE__ << " in writeGeometryNode, i am TGeoCompositeShape, " << solid.toString()  << std::endl;
-
     HepPolyhedron *polyhedron = getBooleanSolidPolyhedron(solid);
     GPolyhedron *polyh = new GPolyhedron(*polyhedron);
     writePolyhedron(solid, polyh, solidName, solidID);
@@ -758,7 +749,7 @@ void dd4hep2FBXWriter::writeGeometryNode(Solid solid, const std::string solidNam
   {
     // auto a=Polyhedra(solid);
     // std::cout << __LINE__ << " name:" << solid.name() << " type:" << solid.type() << std::endl;
-    std::cout << __LINE__ << " in writeGeometryNode, i am not TGeoCompositeShape, " << solid.toString()  << std::endl;
+    // std::cout << __LINE__ << "solid info: " << solid.toString() << std::endl;
     writePolyhedron(solid, getPolyhedron(solid), solidName, solidID);
   }
 }
@@ -770,7 +761,6 @@ HepPolyhedron *dd4hep2FBXWriter::getBooleanSolidPolyhedron(Solid solid)
   Solid solidA = boSolid.leftShape();
   Solid solidB = boSolid.rightShape();
 
-  std::cout << __LINE__ << " in getBooleanSolidPolyhedron A:" << solidA.toString() << " B:" << solidB.toString() << std::endl;
   HepPolyhedron *polyhedronA = NULL;
   string solidAtype = solidA.type();
   if ((solidAtype == "TGeoCompositeShape"))
@@ -787,8 +777,6 @@ HepPolyhedron *dd4hep2FBXWriter::getBooleanSolidPolyhedron(Solid solid)
   if ((solidBtype == "TGeoCompositeShape"))
   {
     polyhedronB = getBooleanSolidPolyhedron(solidB);
-      // TGeoMatrix *leftMat =  boSolid.leftMatrix()
-   
   }
   else
   {
@@ -811,15 +799,6 @@ HepPolyhedron *dd4hep2FBXWriter::getBooleanSolidPolyhedron(Solid solid)
                                     rot[6], rot[7], rot[8], t[2]);
 
     polyhedronB->Transform(rightTrf);
-    
-
-    rightTrf.GetDecomposition (r, v);
-    // polyhedronB->Transform(Transform3D(EulerAngles(0,0,0),Position(t[0],t[1],t[2])));
-    // polyhedronB->Transform(Transform3D(r,Position(0,0,0)));  
-    std::cout << __LINE__ << boSolid.rightShape().name() <<  ", rotation, zyx:" << r.Phi() << " " << r.Theta() << " " << r.Psi() 
-                << ", pos xyz:" <<  v.x() << " " << v.y() << " " << v.z() << " "
-                << std::endl; 
-      
   }
 
   /// home/wln/DD4hep_source/DDCore/src/ShapeUtilities.cpp
@@ -828,31 +807,12 @@ HepPolyhedron *dd4hep2FBXWriter::getBooleanSolidPolyhedron(Solid solid)
   TGeoBoolNode::EGeoBoolType oper = boolean->GetBooleanOperator();
 
   HepPolyhedron *result = new HepPolyhedron();
-  if (oper == TGeoBoolNode::kGeoUnion){
-    std::cout << __LINE__ << " add " << solidA.name() << "+ " << solidB.name() 
-         <<  ", rotation, zyx:" << r.Phi() << " " << r.Theta() << " " << r.Psi() 
-                << ", pos xyz:" <<  v.x() << " " << v.y() << " " << v.z() << " "
-                << std::endl; 
-    *result = polyhedronA->add(*polyhedronB);
-
-  }
-  else if (oper == TGeoBoolNode::kGeoSubtraction)
-  {
+  if (oper == TGeoBoolNode::kGeoSubtraction)
     *result = polyhedronA->subtract(*polyhedronB);
-    std::cout << __LINE__ << " kGeoSubtraction " << solidA.name() << "- " << solidB.name() 
-         <<  ", rotation, zyx:" << r.Phi() << " " << r.Theta() << " " << r.Psi() 
-                << ", pos xyz:" <<  v.x() << " " << v.y() << " " << v.z() << " "
-                << std::endl; 
-
-  }
+  else if (oper == TGeoBoolNode::kGeoUnion)
+    *result = polyhedronA->add(*polyhedronB);
   else if (oper == TGeoBoolNode::kGeoIntersection)
-  {
-    std::cout << __LINE__ << " kGeoIntersection " << solidA.name() << " n " << solidB.name() 
-         <<  ", rotation, zyx:" << r.Phi() << " " << r.Theta() << " " << r.Psi() 
-                << ", pos xyz:" <<  v.x() << " " << v.y() << " " << v.z() << " "
-                << std::endl; 
     *result = polyhedronA->intersect(*polyhedronB);
-  }
   else
   {
     std::cerr << "getBooleanSolidPolyhedron(): Unrecognized boolean solid " << solid.name() << " of type " << solid.type() << std::endl;
@@ -867,7 +827,7 @@ void dd4hep2FBXWriter::writePolyhedron(Solid solid, GPolyhedron *polyhedron, con
 {
   if (polyhedron)
   {
-    polyhedron->SetNumberOfRotationSteps(10);
+    polyhedron->SetNumberOfRotationSteps(20);
     m_File << "\t; Solid " << solid.name() << " of type " << solid.type() << std::endl
            << "\tGeometry: " << solidID << ", \"Geometry::" << name << "\", \"Mesh\" {" << std::endl
            << "\t\tVertices: *" << polyhedron->GetNoVertices() * 3 << " {" << std::endl

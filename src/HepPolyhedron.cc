@@ -66,16 +66,6 @@
 #include "HepPolyhedron.h"
 // #include "G4PhysicalConstants.hh"
 #include <CLHEP/Geometry/Vector3D.h> //#include "HepGeom::Vector3D<double>.hh"
-#include <CLHEP/Geometry/Transform3D.h>  
-
-
-
-#include "CLHEP/Geometry/BasicVector3D.h"
-#include "CLHEP/Geometry/defs.h"
-#include "CLHEP/Geometry/Normal3D.h"
-#include "CLHEP/Geometry/Plane3D.h"
-#include "CLHEP/Geometry/Point3D.h"
-#include "CLHEP/Geometry/Vector3D.h"
 
 #include <cstdlib>  // Required on some compilers for std::abs(int) ...
 #include <cmath>
@@ -101,7 +91,7 @@ using CLHEP::deg;
 using CLHEP::pi;
 using CLHEP::twopi;
 using CLHEP::nm;
-const double spatialTolerance = 1*nm;
+const double spatialTolerance = 0.01*nm;
 
 /***********************************************************************
  *                                                                     *
@@ -1233,6 +1223,7 @@ void HepPolyhedron::InvertFacets()
     }
   }
 }
+
 class mmTransform3d : public HepGeom::Transform3D{
   public:
   mmTransform3d(){}
