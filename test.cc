@@ -16,7 +16,8 @@
 int main()
 {
   // Detector &lcdd = Detector::getInstance();
-  string filePath="/home/wln/DD4hep_source/DDDetectors/compact/SiD.xml";
+  // string filePath="/home/wln/DD4hep_source/DDDetectors/compact/SiD.xml";
+  string filePath="/home/wln/STCFGeo/compact/STCF.xml" ;
   // string filePath="/home/wln/DD4hep/DDJunoDetectors/compact/Juno.xml";
   // Tube waterPool(0, 10 * mm, 10 * mm, 20 * mm, 30 * mm);
   // lcdd.fromCompact("/home/wln/DD4hep_source/DDDetectors/compact/SiD.xml");

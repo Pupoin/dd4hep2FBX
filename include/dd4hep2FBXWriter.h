@@ -118,7 +118,7 @@ private:
 
 
 
-void getVolSolid(TGeoNode *node);
+void getVolSolid(TGeoNode *node, unsigned long idx);
 
 
 /////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -142,6 +142,9 @@ void getVolSolid(TGeoNode *node);
 
   //! Modified (legal-character and unique) solid name
   std::vector<std::string> m_solidName;
+  std::vector< long> m_motherIndex;
+   long m_idx;
+
   std::vector<std::string> m_materialName;
 
   std::vector<std::string> m_placedVolName;
