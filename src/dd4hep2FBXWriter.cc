@@ -233,26 +233,26 @@ bool dd4hep2FBXWriter::doit(std::string outputFilename)
 
   std::cout << "********* assignName **************" << std::endl;
   // Assign new name if duplicate
-  for (size_t i = 0; i < m_det.size(); i++)
-  {
-    DetElement subdet = m_det[i];
-    string detName = subdet.name();
-    m_detName = assignName(m_detName, detName, i);
-  }
-  for (size_t i = 0; i < m_vol.size(); i++)
-  {
-    string detVolName = m_volName[i];
-    string solidName = m_solidName[i];
-    string pvname = m_placedVolName[i];
+  // for (size_t i = 0; i < m_det.size(); i++)
+  // {
+  //   DetElement subdet = m_det[i];
+  //   string detName = subdet.name();
+  //   m_detName = assignName(m_detName, detName, i);
+  // }
+  // for (size_t i = 0; i < m_vol.size(); i++)
+  // {
+  //   string detVolName = m_volName[i];
+  //   string solidName = m_solidName[i];
+  //   string pvname = m_placedVolName[i];
 
-    m_volName = assignName(m_volName, detVolName, i);
-    m_solidName = assignName(m_solidName, solidName, i);
-    m_placedVolName = assignName(m_placedVolName, pvname, i);
+  //   m_volName = assignName(m_volName, detVolName, i);
+  //   m_solidName = assignName(m_solidName, solidName, i);
+  //   m_placedVolName = assignName(m_placedVolName, pvname, i);
 
-    // m_vol[i]->SetName(m_volName[i]);
-    // m_solid[i]->SetName(m_solidName[i]);
-    // m_placedVol[i]->SetName(m_placedVolName[i]);
-  }
+  //   // m_vol[i]->SetName(m_volName[i]);
+  //   // m_solid[i]->SetName(m_solidName[i]);
+  //   // m_placedVol[i]->SetName(m_placedVolName[i]);
+  // }
   // Count the number of references to each physical volume and logical volume and solid
   // so that these values can be placed in the FBX file's Definitions{} section.
   // countEntities(m_world);
