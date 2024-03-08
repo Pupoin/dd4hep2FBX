@@ -13,11 +13,17 @@
 #include <iomanip>
 
 
-int main()
+int main(int argc, char* argv[])
 {
   // Detector &lcdd = Detector::getInstance();
   // string filePath="/home/wln/DD4hep_source/DDDetectors/compact/SiD.xml";
+  std::cout << "Run me like: ./dd4hep2FBX  </path/to/xml.file>" << std::endl;
   string filePath="/home/wln/STCFGeo/compact/STCF.xml" ;
+  if(argv[1]){
+    filePath = argv[1];
+  }
+  std::cout << "The xml file is: " <<  filePath << std::endl;
+  // return 0;
   // string filePath="/home/wln/DD4hep/DDJunoDetectors/compact/Juno.xml";
   // Tube waterPool(0, 10 * mm, 10 * mm, 20 * mm, 30 * mm);
   // lcdd.fromCompact("/home/wln/DD4hep_source/DDDetectors/compact/SiD.xml");
