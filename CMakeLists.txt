@@ -12,7 +12,9 @@ ENDIF()
 # link_directories("/publicfs/ucas/user/yuanchy8/CEPCSW/InstallArea/lib/")
 # include_directories("/publicfs/ucas/user/yuanchy8/CEPCSW/InstallArea/include" "include/")
 
-include_directories("/home/wln/DD4hep/include/" "include/")
+find_package(DD4hep REQUIRED )
+include_directories(${DD4hep_INCLUDE_DIRS} "include/")
+# include_directories("/home/wln/DD4hep/include/" "include/")
 # set(LIB_SRC dd4hep2FBXWriter.cc)
 # add_library(libdd4hep2FBX ${LIB_SRC})
 
