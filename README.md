@@ -21,3 +21,5 @@ export LD_LIBRARY_PATH="/home/wln/STCFGeo/build/lib:$LD_LIBRARY_PATH"
 export PATH="$PATH:/home/wln/STCFGeo/build/bin"
 ```
 
+# bugs
+https://1drv.ms/p/s!At2Rqn8R-kGdhvdQU6wXxBG3SLWkXQ?e=jFxffn
